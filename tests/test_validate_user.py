@@ -1,8 +1,8 @@
-from unittest import TestCase
 import unittest
+from unittest import TestCase
+
 from app import User
 from app import validate_user
-
 
 
 class TestValidate_user(TestCase):
@@ -32,19 +32,22 @@ class TestValidate_user(TestCase):
                 continue
 
             cloneParms[Parameter] = str(ParameterValue) + 'f'
-            TestUser = User(cloneParms['Years'], cloneParms['Balance'], cloneParms['Rating'], cloneParms['Age'], cloneParms['AccountType'])
+            TestUser = User(cloneParms['Years'], cloneParms['Balance'], cloneParms['Rating'], cloneParms['Age'],
+                            cloneParms['AccountType'])
             self.assertFalse(validate_user(TestUser))
 
             cloneParms = parms.copy()
             if Parameter == 'Balance':
                 continue
             cloneParms[Parameter] = 0
-            TestUser = User(cloneParms['Years'], cloneParms['Balance'], cloneParms['Rating'], cloneParms['Age'], cloneParms['AccountType'])
+            TestUser = User(cloneParms['Years'], cloneParms['Balance'], cloneParms['Rating'], cloneParms['Age'],
+                            cloneParms['AccountType'])
             self.assertFalse(validate_user(TestUser))
 
             cloneParms = parms.copy()
             cloneParms[Parameter] = -1
-            TestUser = User(cloneParms['Years'], cloneParms['Balance'], cloneParms['Rating'], cloneParms['Age'], cloneParms['AccountType'])
+            TestUser = User(cloneParms['Years'], cloneParms['Balance'], cloneParms['Rating'], cloneParms['Age'],
+                            cloneParms['AccountType'])
             self.assertFalse(validate_user(TestUser))
 
 

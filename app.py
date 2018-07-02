@@ -1,15 +1,20 @@
 from flask import Flask
-from flask import request
 from flask import jsonify
+from flask import request
 
 app = Flask(__name__)
 
+
 @app.route('/Promotions/')
 def list_promotions():
-    if not validate_user(request.args):
+    RequestedUser = User(float(request.args['Years']), float(request.args['Balance']), float(request.args['Rating']),
+                         float(request.args['Age']), request.args['AccountType'])
+
+    if not validate_user(RequestedUser):
         return "Bad Input", 400
-    RequestedUser = User(float(request.args['Years']), float(request.args['Balance']), float(request.args['Rating']), float(request.args['Age']), request.args['AccountType'])
+
     return jsonify(determine_promotions(RequestedUser))
+
 
 def validate_user(User):
     try:
