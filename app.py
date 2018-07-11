@@ -1,25 +1,33 @@
 from flask import Flask
-from flask import request
 from flask import jsonify
+from flask import request
 
 app = Flask(__name__)
 
+
 @app.route('/Promotions/')
 def list_promotions():
-    if not validate_user(request.args):
+    ValidateUser = {}
+    ValidateUser = request.args
+
+    if not validate_user(ValidateUser):
         return "Bad Input", 400
-    RequestedUser = User(float(request.args['Years']), float(request.args['Balance']), float(request.args['Rating']), float(request.args['Age']), request.args['AccountType'])
+
+    RequestedUser = User(float(request.args['Years']), float(request.args['Balance']), float(request.args['Rating']),
+                         float(request.args['Age']), request.args['AccountType'])
+
     return jsonify(determine_promotions(RequestedUser))
+
 
 def validate_user(User):
     try:
-        float(User.Balance)
-        if not (float(User.Years) > 0 and float(User.Rating) > 0 and float(User.Age) > 0):
+        float(User['Balance'])
+        if not (float(User['Years']) > 0 and float(User['Rating']) > 0 and float(User['Age']) > 0):
             return False
     except ValueError:
         return False
 
-    if User.AccountType not in {'Blue', 'Gold', 'Platinum'}:
+    if User['AccountType'] not in {'Blue', 'Gold', 'Platinum'}:
         return False
 
     return True
@@ -42,7 +50,7 @@ def determine_promotions(User):
         return False
 
     def rule3(User):
-        if User.Years > 5 and GoodStanding(User):
+        if User.Years > 5:
             return True
         return False
 
@@ -54,7 +62,7 @@ def determine_promotions(User):
     def GoodStanding(User):
         if User.AccountType == 'Platinum':
             return True
-        if User.Rating > 500 and User.Balance >= 0:
+        if User.Rating > 500 or User.Balance >= 0:
             return True
         return False
 
