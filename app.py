@@ -11,7 +11,7 @@ def list_promotions():
     ValidateUser = request.args
 
     if not validate_user(ValidateUser):
-        return "Bad Input", 400
+        return "Bad Input", 401
 
     RequestedUser = User(float(request.args['Years']), float(request.args['Balance']), float(request.args['Rating']),
                          float(request.args['Age']), request.args['AccountType'])

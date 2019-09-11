@@ -1,0 +1,13 @@
+
+*.csh
+venv/
+*.idea/*
+*.xml
+.idea/misc.xml
+*.pyc
+*.iml
+*.xml
+.idea/vcs.xml
+.idea/modules.xml
+.idea/misc.xml
+.idea/DemoPromotionsService.iml
