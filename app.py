@@ -7,81 +7,86 @@ app = Flask(__name__)
 
 @app.route('/Promotions/')
 def list_promotions():
-    ValidateUser = {}
-    ValidateUser = request.args
+    user = {}
+    user = request.args
 
-    if not validate_user(ValidateUser):
+    if not validate_user(user):
         return "Bad Input", 401
 
-    RequestedUser = User(float(request.args['Years']), float(request.args['Balance']), float(request.args['Rating']),
-                         float(request.args['Age']), request.args['AccountType'])
+    requested_user = User(float(request.args['Years']), float(request.args['Balance']), float(request.args['Rating']),
+                          float(request.args['Age']), request.args['AccountType'])
 
-    return jsonify(determine_promotions(RequestedUser))
+    return jsonify(determine_promotions(requested_user))
 
 
-def validate_user(User):
+def validate_user(user):
     try:
-        float(User['Balance'])
-        if not (float(User['Years']) > 0 and float(User['Rating']) > 0 and float(User['Age']) > 0):
+        float(user['Balance'])
+        if not (float(user['Years']) > 0 and float(user['Rating']) > 0 and float(user['Age']) > 0):
             return False
     except ValueError:
         return False
 
-    if User['AccountType'] not in {'Blue', 'Gold', 'Platinum'}:
+    if user['AccountType'] not in {'Blue', 'Gold', 'Platinum'}:
         return False
 
     return True
 
 
-def determine_promotions(User):
-    MyResults = Results()
+def determine_promotions(user):
+    user_results = Results()
 
-    def rule1(User):
-        if 21 <= User.Age <= 35:
-            if User.Rating >= 600 or User.Balance > 10000:
+    if rule_millennial(user):
+        user_results.Promotions.append("Millennial Madness")
+
+    if rule_oldies(user):
+        user_results.Promotions.append("Golden Oldies")
+
+    if rule_loyalty(user):
+        user_results.Promotions.append("Loyalty Bonus")
+
+    if rule_valued(user):
+        user_results.Promotions.append("Valued Customer")
+
+    if len(user_results.Promotions) == 0:
+        user_results.Promotions.append("No Promotions!")
+
+    return user_results.Promotions
+
+
+def rule_millennial(user):
+    if 21 <= user.Age <= 35:
+        if user.Rating >= 600 or user.Balance > 10000:
+            return True
+    return False
+
+
+def rule_oldies(user):
+    if user.Age >= 65:
+        if user.Rating >= 500 or user.Balance > 5000:
+            if user.Years >= 10 or (user.AccountType in {'Gold', 'Platinum'}):
                 return True
-        return False
+    return False
 
-    def rule2(User):
-        if User.Age >= 65:
-            if User.Rating >= 500 or User.Balance > 5000:
-                if User.Years >= 10 or (User.AccountType in {'Gold', 'Platinum'}):
-                    return True
-        return False
 
-    def rule3(User):
-        if User.Years > 5:
-            return True
-        return False
+def rule_loyalty(user):
+    if user.Years > 5:
+        return True
+    return False
 
-    def rule4(User):
-        if GoodStanding(User) and not (rule1(User) or rule2(User) or rule3(User)):
-            return True
-        return False
 
-    def GoodStanding(User):
-        if User.AccountType == 'Platinum':
-            return True
-        if User.Rating > 500 or User.Balance >= 0:
-            return True
-        return False
+def rule_valued(user):
+    if rule_good_standing(user) and not (rule_millennial(user) or rule_oldies(user) or rule_loyalty(user)):
+        return True
+    return False
 
-    if rule1(User):
-        MyResults.Promotions.append("Millennial Madness")
 
-    if rule2(User):
-        MyResults.Promotions.append("Golden Oldies")
-
-    if rule3(User):
-        MyResults.Promotions.append("Loyalty Bonus")
-
-    if rule4(User):
-        MyResults.Promotions.append("Valued Customer")
-
-    if len(MyResults.Promotions) == 0:
-        MyResults.Promotions.append("No Promotions!")
-
-    return MyResults.Promotions
+def rule_good_standing(user):
+    if user.AccountType == 'Platinum':
+        return True
+    if user.Rating > 500 or user.Balance >= 0:
+        return True
+    return False
 
 
 class Results:
@@ -99,4 +104,4 @@ class User:
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(processes=6)
