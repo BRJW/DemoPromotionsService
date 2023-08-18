@@ -1,0 +1,39 @@
+name: Call Test Insights APIs on Pull Request to Master
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  make-api-calls:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install jq for JSON parsing
+      run: sudo apt-get install -y jq
+
+    - name: Submit job
+      run: |
+        response=$(curl -s -X POST "https://partner.testinsights.io/api/apikey/${{ secrets.TEST_INSIGHTS_API_KEY }}/job")
+        job_id=$(echo $response | jq '.id')
+        echo "JOB_ID=$job_id" >> $GITHUB_ENV
+
+    - name: Track job status
+      run: |
+        while true; do
+          status_response=$(curl -s -X GET "https://partner.testinsights.io/api/apikey/${{ secrets.TEST_INSIGHTS_API_KEY }}/job/$JOB_ID")
+          status=$(echo $status_response | jq -r '.jobState')
+          if [ "$status" == "completed" ]; then
+            break
+          fi
+          sleep 10
+        done
+
+    - name: Retrieve job result
+      run: |
+        curl -s -X GET "https://partner.testinsights.io/api/apikey/${{ secrets.TEST_INSIGHTS_API_KEY }}/job/$JOB_ID/result" > result.json
+
