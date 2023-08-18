@@ -22,7 +22,7 @@ def list_promotions():
 def validate_user(user):
     try:
         float(user['Balance'])
-        if not (float(user['Years']) > 0 and float(user['Rating']) > 0 and float(user['Age']) > 0):
+        if not (float(user['Years']) > 5 and float(user['Rating']) > 0 and float(user['Age']) > 0):
             return False
     except ValueError:
         return False
