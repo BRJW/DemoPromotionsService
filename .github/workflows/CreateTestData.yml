@@ -1,4 +1,4 @@
-name: Call Test Insights APIs on Pull Request to Master
+name: Test Insights API Check on Pull Request to Master
 
 on:
   pull_request:
@@ -18,22 +18,104 @@ jobs:
 
     - name: Submit job
       run: |
-        response=$(curl -s -X POST "https://partner.testinsights.io/api/apikey/${{ secrets.TEST_INSIGHTS_API_KEY }}/job")
+        response=$(curl -s -X POST "https://partner.testinsights.io/api/apikey/${{ secrets.TEST_INSIGHTS_API_KEY }}/job" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "jobType": "VIPAutoExecutionJob",
+            "projectId": 100088,
+            "vipAutomationJobSettings": {
+              "testSuiteId": null,
+              "testPaths": null,
+              "machineKey": "BENXPS",
+              "serverProfileId": 116,
+              "serverProcessId": 18655,
+              "automationType": "Data Activity - Create Message New Rule Set",
+              "scope": "DataActivity",
+              "automationParameters": [
+                {
+                  "var": "parActivityVersionID",
+                  "paramIndex": 1,
+                  "value": "382"
+                },
+                {
+                  "var": "parActivityVersionMetaChildID",
+                  "paramIndex": 2,
+                  "value": "389"
+                },
+                {
+                  "var": "parRuleSetName",
+                  "paramIndex": 3,
+                  "value": ""
+                },
+                {
+                  "var": "parRuleSetVersionName",
+                  "paramIndex": 4,
+                  "value": ""
+                },
+                {
+                  "var": "parDescription",
+                  "paramIndex": 5,
+                  "value": ""
+                },
+                {
+                  "var": "parNotes",
+                  "paramIndex": 6,
+                  "value": ""
+                },
+                {
+                  "var": "parTags",
+                  "paramIndex": 7,
+                  "value": ""
+                }
+              ],
+              "sharedJobServer": false
+            }
+          }')
         job_id=$(echo $response | jq '.id')
         echo "JOB_ID=$job_id" >> $GITHUB_ENV
 
     - name: Track job status
       run: |
-        while true; do
+        end_time=$(date -u +%s)
+        let "end_time+=300"  # 300 seconds = 5 minutes
+        while [[ $(date -u +%s) -lt $end_time ]]; do
           status_response=$(curl -s -X GET "https://partner.testinsights.io/api/apikey/${{ secrets.TEST_INSIGHTS_API_KEY }}/job/$JOB_ID")
           status=$(echo $status_response | jq -r '.jobState')
           if [ "$status" == "completed" ]; then
-            break
+            echo "Job completed successfully."
+            exit 0
           fi
           sleep 10
         done
+        echo "Job did not complete within 5 minutes." >&2
+        exit 1
 
-    - name: Retrieve job result
+    - name: Retrieve job result and create a check run
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        curl -s -X GET "https://partner.testinsights.io/api/apikey/${{ secrets.TEST_INSIGHTS_API_KEY }}/job/$JOB_ID/result" > result.json
-
+        result_response=$(curl -s -X GET "https://partner.testinsights.io/api/apikey/${{ secrets.TEST_INSIGHTS_API_KEY }}/job/$JOB_ID/result")
+        result_value=$(echo $result_response | jq -r '.resultValue')
+        
+        conclusion="neutral"
+        if [ "$result_value" == "pass" ]; then
+          conclusion="success"
+        elif [ "$result_value" == "fail" ]; then
+          conclusion="failure"
+        fi
+        
+        curl \
+          -X POST \
+          -H "Authorization: Bearer $GITHUB_TOKEN" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/check-runs \
+          -d '{
+            "name": "test-insights-check",
+            "head_sha": "${{ github.sha }}",
+            "status": "completed",
+            "conclusion": "'$conclusion'",
+            "output": {
+              "title": "Test Insights Job Result",
+              "summary": "Job '$result_value'"
+            }
+          }'
